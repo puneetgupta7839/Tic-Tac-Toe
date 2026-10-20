@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f5f4ef" />
+  <title>Crossed — Tic Tac Toe</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="page">
+    <header class="top"><div class="brand"><div class="mark">×</div> Crossed</div><div class="top-note">A little friendly rivalry</div></header>
+    <section class="intro"><div><div class="eyebrow">Pass &amp; play · two players</div><h1>Make your<br>move.</h1><p>One board. Two players. May the best mark win.</p></div><div class="round-picker"><label>Match format</label><div class="segmented" role="group" aria-label="Choose number of rounds"><button data-rounds="5" class="active">Best of 5</button><button data-rounds="11">Best of 11</button></div></div></section>
+    <section class="layout" aria-label="Tic tac toe match">
+      <div class="player-card x-card"><div class="side-title">Player X</div><div class="player"><div class="symbol x">×</div><div class="player-name">Player X<div class="player-sub">Goes first</div></div><div class="score" id="scoreX">0</div></div></div>
+      <div class="arena"><div class="arena-head"><div class="round-label" id="roundLabel">Round 1 of 5</div><div class="status" aria-live="polite"><span class="dot"></span><span id="statusText">X's turn</span></div></div><div class="board" id="board" role="grid" aria-label="Tic tac toe board"></div><div class="arena-foot"><div class="turn-hint" id="hint">Players share this screen and take turns.</div><button class="reset" id="resetRound">↻ &nbsp;Restart round</button></div></div>
+      <div class="player-card o-card"><div class="side-title">Player O</div><div class="player"><div class="symbol o">○</div><div class="player-name">Player O<div class="player-sub">Your turn follows</div></div><div class="score" id="scoreO">0</div></div></div>
+      <div class="history"><div class="side-title">Rounds played <span id="playedCount">0</span></div><div class="history-list" id="historyList"><span class="empty-history">Your match starts here.</span></div></div><div class="match-result" id="matchResult" aria-live="polite"><div class="side-title">Match complete</div><div class="result-name" id="resultName"></div><div class="result-sub" id="resultSub"></div><button class="new-match" id="newMatch">Start a new match</button></div>
+    </section>
+    <div class="celebration" id="celebration" role="dialog" aria-modal="true" aria-labelledby="celebrationTitle" aria-describedby="celebrationMessage"><div class="celebration-card"><div class="confetti" aria-hidden="true">✦ ✦ ✦</div><div class="side-title">Match complete</div><h2 id="celebrationTitle">Congratulations!</h2><p id="celebrationMessage">A great match.</p><div class="celebration-score" id="celebrationScore"></div><button class="celebrate-button" id="celebrationNewMatch">Start a new match</button></div></div>
+    <footer class="bottom"><span>Take turns on the same device</span><span>Good games, good company.</span></footer>
+  </main>
+    <script src="script.js" defer></script>
+</body>
+</html>
