@@ -11,3 +11,24 @@
 .bottom{display:flex;justify-content:space-between;margin-top:24px;padding-top:13px;border-top:1px solid var(--line);font:10px 'DM Mono',monospace;color:#a0a096;text-transform:uppercase;letter-spacing:.08em}.bottom span:last-child{color:var(--green)}
 @media(max-width:760px){.page{padding:20px 18px 28px}.intro{align-items:start;gap:20px;flex-direction:column;padding:31px 0 22px}.round-picker{text-align:left}.top-tools{gap:8px}.top-note{display:none}.player-setup{grid-template-columns:1fr;gap:17px;padding:18px}.setup-actions{align-items:flex-start;flex-direction:column}.start-button{width:100%}.layout{grid-template-columns:1fr 1fr;gap:12px}.arena{grid-column:1/-1;grid-row:1}.player-card.x-card{grid-column:1;grid-row:2}.player-card.o-card{grid-column:2;grid-row:2}.history{grid-column:1/-1;grid-row:3}.match-result{grid-column:1/-1}.player-card,.history{padding:14px}.arena{padding:15px}.board{gap:6px}.cell{border-radius:8px}.bottom{margin-top:18px}}
 @media(max-width:390px){.layout{grid-template-columns:1fr}.arena,.player-card.x-card,.player-card.o-card,.history,.match-result{grid-column:1}.arena{grid-row:1}.player-card.x-card{grid-row:2}.player-card.o-card{grid-row:3}.history{grid-row:4}.match-result{grid-row:5}.name-fields{grid-template-columns:1fr}}
+
+/* Small game motions make moves and round changes easier to follow. */
+.cell.just-played{animation:mark-pop .24s cubic-bezier(.2,.9,.3,1.35)}
+.cell.win{animation:win-glow .85s ease-in-out 2}
+.cell.win.just-played{animation:mark-pop .24s cubic-bezier(.2,.9,.3,1.35),win-glow .85s ease-in-out 2}
+.score-bump{animation:score-bump .35s cubic-bezier(.2,.9,.3,1.25)}
+.arena.round-enter{animation:round-enter .42s cubic-bezier(.2,.7,.3,1) both}
+.status .dot{animation:turn-pulse 1.8s ease-in-out infinite}
+.celebration-card .confetti{animation:confetti-float 1.4s ease-in-out infinite alternate}
+.cell:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+.start-button,.celebrate-button,.reset,.saved-scores-button{transition:transform .16s ease,box-shadow .16s ease,background-color .16s ease}
+.start-button:hover,.celebrate-button:hover,.reset:hover,.saved-scores-button:hover{transform:translateY(-2px);box-shadow:0 4px 12px #20231f18}
+@keyframes mark-pop{0%{opacity:.35;transform:scale(.45)}75%{transform:scale(1.12)}100%{opacity:1;transform:scale(1)}}
+@keyframes win-glow{0%,100%{box-shadow:0 0 0 0 #376b5200;transform:scale(1)}50%{box-shadow:0 0 0 6px #376b5220;transform:scale(1.035)}}
+@keyframes score-bump{0%{transform:scale(1)}45%{transform:scale(1.32);color:var(--green)}100%{transform:scale(1)}}
+@keyframes round-enter{from{opacity:.65;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes turn-pulse{0%,100%{box-shadow:0 0 0 3px var(--mint)}50%{box-shadow:0 0 0 6px #dce9df80}}
+@keyframes confetti-float{from{transform:translateY(0) rotate(-3deg)}to{transform:translateY(-5px) rotate(3deg)}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+.mode-choice{margin-bottom:13px}.mode-heading{font:10px 'DM Mono',monospace;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px}.mode-choice .segmented{width:max-content;max-width:100%}.mode-choice .segmented button{white-space:nowrap}.mode-choice>p{font-size:11px;color:var(--muted);margin:7px 0 0}.name-fields.ai-mode{grid-template-columns:1fr}.ai-note{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;background:#f0efe9;border:1px solid var(--line);border-radius:8px;color:var(--muted);font-size:11px;line-height:1.45}.ai-note strong{color:var(--ink)}.ai-symbol{width:30px;height:30px;display:grid;place-items:center;flex:none;border-radius:8px;background:#f8e5de;color:var(--coral);font-size:20px}
+@media(max-width:760px){.mode-choice .segmented{width:100%}.mode-choice .segmented button{flex:1;padding:8px 9px}}
