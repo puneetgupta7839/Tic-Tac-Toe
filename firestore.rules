@@ -42,20 +42,22 @@ service cloud.firestore {
         && board[8] in ['', 'X', 'O'];
     }
 
-    function countMarks(board, mark) {
-      return (board[0] == mark ? 1 : 0) + (board[1] == mark ? 1 : 0)
-        + (board[2] == mark ? 1 : 0) + (board[3] == mark ? 1 : 0)
-        + (board[4] == mark ? 1 : 0) + (board[5] == mark ? 1 : 0)
-        + (board[6] == mark ? 1 : 0) + (board[7] == mark ? 1 : 0)
-        + (board[8] == mark ? 1 : 0);
+    function isFull(board) {
+      return board[0] != '' && board[1] != '' && board[2] != ''
+        && board[3] != '' && board[4] != '' && board[5] != ''
+        && board[6] != '' && board[7] != '' && board[8] != '';
     }
 
-    function changedCells(before, after) {
-      return (before[0] == after[0] ? 0 : 1) + (before[1] == after[1] ? 0 : 1)
-        + (before[2] == after[2] ? 0 : 1) + (before[3] == after[3] ? 0 : 1)
-        + (before[4] == after[4] ? 0 : 1) + (before[5] == after[5] ? 0 : 1)
-        + (before[6] == after[6] ? 0 : 1) + (before[7] == after[7] ? 0 : 1)
-        + (before[8] == after[8] ? 0 : 1);
+    function validBoardMove(before, after, mark) {
+      return (before[0] == '' && after[0] == mark && before[1] == after[1] && before[2] == after[2] && before[3] == after[3] && before[4] == after[4] && before[5] == after[5] && before[6] == after[6] && before[7] == after[7] && before[8] == after[8])
+        || (before[1] == '' && after[1] == mark && before[0] == after[0] && before[2] == after[2] && before[3] == after[3] && before[4] == after[4] && before[5] == after[5] && before[6] == after[6] && before[7] == after[7] && before[8] == after[8])
+        || (before[2] == '' && after[2] == mark && before[0] == after[0] && before[1] == after[1] && before[3] == after[3] && before[4] == after[4] && before[5] == after[5] && before[6] == after[6] && before[7] == after[7] && before[8] == after[8])
+        || (before[3] == '' && after[3] == mark && before[0] == after[0] && before[1] == after[1] && before[2] == after[2] && before[4] == after[4] && before[5] == after[5] && before[6] == after[6] && before[7] == after[7] && before[8] == after[8])
+        || (before[4] == '' && after[4] == mark && before[0] == after[0] && before[1] == after[1] && before[2] == after[2] && before[3] == after[3] && before[5] == after[5] && before[6] == after[6] && before[7] == after[7] && before[8] == after[8])
+        || (before[5] == '' && after[5] == mark && before[0] == after[0] && before[1] == after[1] && before[2] == after[2] && before[3] == after[3] && before[4] == after[4] && before[6] == after[6] && before[7] == after[7] && before[8] == after[8])
+        || (before[6] == '' && after[6] == mark && before[0] == after[0] && before[1] == after[1] && before[2] == after[2] && before[3] == after[3] && before[4] == after[4] && before[5] == after[5] && before[7] == after[7] && before[8] == after[8])
+        || (before[7] == '' && after[7] == mark && before[0] == after[0] && before[1] == after[1] && before[2] == after[2] && before[3] == after[3] && before[4] == after[4] && before[5] == after[5] && before[6] == after[6] && before[8] == after[8])
+        || (before[8] == '' && after[8] == mark && before[0] == after[0] && before[1] == after[1] && before[2] == after[2] && before[3] == after[3] && before[4] == after[4] && before[5] == after[5] && before[6] == after[6] && before[7] == after[7]);
     }
 
     function hasWon(board, mark) {
@@ -72,7 +74,7 @@ service cloud.firestore {
     function roundResult(board) {
       return hasWon(board, 'X') ? 'X'
         : hasWon(board, 'O') ? 'O'
-        : countMarks(board, '') == 0 ? 'D' : 'none';
+        : isFull(board) ? 'D' : 'none';
     }
 
     function otherMark(mark) {
@@ -139,7 +141,7 @@ service cloud.firestore {
         && validRoom(next, roomId);
     }
 
-    function validRoomMove(roomId) {
+    function validRoomMove() {
       let old = resource.data;
       let next = request.resource.data;
       let mark = old.turn;
@@ -154,11 +156,16 @@ service cloud.firestore {
         && next.code == old.code && next.players == old.players
         && next.total == old.total && next.starter == old.starter && next.createdAt == old.createdAt
         && next.turn == otherMark(mark)
-        && changedCells(old.board, next.board) == 1
-        && countMarks(next.board, '') == countMarks(old.board, '') - 1
-        && countMarks(next.board, mark) == countMarks(old.board, mark) + 1
-        && countMarks(next.board, otherMark(mark)) == countMarks(old.board, otherMark(mark))
-        && validRoom(next, roomId)
+        && validBoardMove(old.board, next.board, mark)
+        && validBoard(next.board)
+        && next.nextStarter in ['X', 'O']
+        && next.scores is map
+        && next.scores.keys().hasAll(['X', 'O']) && next.scores.keys().hasOnly(['X', 'O'])
+        && next.scores.X is int && next.scores.X >= 0 && next.scores.X <= 11
+        && next.scores.O is int && next.scores.O >= 0 && next.scores.O <= 11
+        && next.history is list && next.history.size() <= 11 && next.history.hasOnly(['X', 'O', 'D'])
+        && next.status in ['playing', 'round-over', 'complete']
+        && (next.winner == null || next.winner in ['X', 'O'])
         && (
           (result == 'none'
             && next.status == 'playing'
@@ -207,8 +214,9 @@ service cloud.firestore {
           || resource.data.status == 'waiting');
       allow list: if false;
       allow create: if validRoomCreate(roomId);
-      allow update: if validRoomJoin(roomId) || validRoomMove(roomId) || validRoomAdvance(roomId);
+      allow update: if validRoomJoin(roomId) || validRoomMove() || validRoomAdvance(roomId);
       allow delete: if false;
     }
   }
 }
+
