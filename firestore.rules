@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isRoomMember(data) {
+      return signedIn() && (
+        data.players.X.uid == request.auth.uid ||
+        (data.players.O != null && data.players.O.uid == request.auth.uid)
+      );
+    }
+
+    match /users/{userId}/matches/{matchId} {
+      allow read, write: if signedIn() && request.auth.uid == userId;
+    }
+
+    match /rooms/{roomId} {
+      // A room code is required to discover a waiting room. Membership is required after joining.
+      allow get: if signedIn() && (resource == null || resource.data.status == 'waiting' || isRoomMember(resource.data));
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.code == roomId
+        && request.resource.data.players.X.uid == request.auth.uid
+        && request.resource.data.players.O == null
+        && request.resource.data.status == 'waiting';
+      allow update: if signedIn() && (
+        // Let one authenticated guest claim the open Player O seat.
+        (resource.data.status == 'waiting'
+          && resource.data.players.O == null
+          && request.resource.data.players.X == resource.data.players.X
+          && request.resource.data.players.O.uid == request.auth.uid
+          && request.resource.data.status == 'playing')
+        // Once joined, only either room member can advance game state.
+        || (isRoomMember(resource.data)
+          && request.resource.data.players == resource.data.players
+          && request.resource.data.code == resource.data.code)
+      );
+      allow delete: if false;
+    }
+  }
+}
