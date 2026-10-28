@@ -1,31 +1,29 @@
 # Firebase setup for Crossed
 
-The app remains playable without an account. Email/password accounts make named scores available across devices. Online rooms use Firebase Authentication anonymously, so neither player needs to sign up.
+The app uses Firebase Authentication and Cloud Firestore in project `tic-tac-toe-6363f`.
 
-## 1. Create a Firebase project
+## Configured Firebase services
 
-1. Open the [Firebase Console](https://console.firebase.google.com/) and create a project.
-2. In **Project settings → General → Your apps**, add a Web app and copy its config values.
-3. In **Authentication → Sign-in method**, enable **Email/Password** and **Anonymous**.
-4. In **Authentication → Settings → Authorized domains**, add `puneetgupta7839.github.io` if it is not already listed.
-5. In **Firestore Database**, create a database. Choose a region near your users.
+- The Firebase Web app was already registered in the project. Its public Web config is in `firebase-config.js`.
+- Email/Password and Anonymous sign-in are enabled. Anonymous accounts let online guests create and join rooms without signing up.
+- `puneetgupta7839.github.io` is an authorized Authentication domain for the GitHub Pages app.
+- A Standard Firestore database named `(default)` was created in Mumbai (`asia-south1`) with deletion protection enabled.
+- Firestore rules in `firestore.rules` were deployed. The app uses `users/{uid}/matches/{matchId}` for private saved scores and `rooms/{roomCode}` for online matches.
 
-## 2. Add the web app config
+## App files
 
-Open `firebase-config.js` and replace the placeholder values for `apiKey`, `authDomain`, `projectId`, and `appId` with the values from your Firebase Web app. These are Firebase web app identifiers, not administrator credentials. Never put a service account key in this website.
+Deploy these files together at the same site path:
 
-## 3. Publish Firestore rules
+- `index.html`
+- `style.css`
+- `script.js`
+- `firebase-client.js`
+- `firebase-config.js`
 
-In **Firestore Database → Rules**, paste the contents of `firestore.rules` and click **Publish**. These rules keep score history private to its account and restrict room updates to the two players. Room codes are short-lived matchmaking codes, so share them only with the intended opponent.
+`firebase.json`, `.firebaserc`, `firestore.rules`, and `firestore.indexes.json` configure Firebase and are not browser pages. The site must be served over HTTPS; GitHub Pages does this automatically.
 
-## 4. Publish the app
+## Usage and limits
 
-Upload `index.html`, `style.css`, `script.js`, `firebase-client.js`, `firebase-config.js`, and `firestore.rules` to the repository root (the HTML expects the script and CSS files beside it). The setup guide is for reference and does not need to be deployed. After GitHub Pages finishes publishing, open the site over HTTPS and try **Sign in** or **Play online**.
+Cloud Firestore has a no-cost quota; usage beyond the quota may require a billing plan. Check the project’s Usage page as the app gets traffic. [Firebase pricing](https://firebase.google.com/pricing) lists the current quotas.
 
-## What users can do
-
-- Play two-player or against the computer without signing in.
-- Create an account or sign in to sync named match history.
-- Play online as a guest by creating a room and sharing its seven-character code.
-
-This is a small browser game prototype. Firestore rules limit access by room membership, but the client currently sends moves directly; this is suitable for friendly play, not competitive or prize-based matches.
+The Security Rules validate score ownership, record fields, room membership, and legal move/round transitions. Rooms are casual multiplayer; the client remains untrusted and this game is not designed for prize-based competition. Review the prototype rules before broadly sharing the app.

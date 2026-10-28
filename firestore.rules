@@ -1,39 +1,213 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function signedIn() { return request.auth != null; }
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function validName(value) {
+      return value is string && value.size() >= 1 && value.size() <= 24;
+    }
+
+    function validMatch(data, matchId) {
+      return data is map
+        && data.keys().hasAll(['matchId', 'xName', 'oName', 'xScore', 'oScore', 'rounds', 'format', 'winner', 'playedAt'])
+        && data.keys().hasOnly(['matchId', 'xName', 'oName', 'xScore', 'oScore', 'rounds', 'format', 'winner', 'playedAt', 'mode'])
+        && data.matchId == matchId
+        && matchId is string && matchId.size() >= 1 && matchId.size() <= 80
+        && validName(data.xName) && validName(data.oName)
+        && data.xScore is int && data.xScore >= 0 && data.xScore <= 11
+        && data.oScore is int && data.oScore >= 0 && data.oScore <= 11
+        && data.rounds is int && data.rounds >= 1 && data.rounds <= 11
+        && data.format is int && data.format in [5, 11]
+        && data.winner is string && data.winner.size() >= 1 && data.winner.size() <= 24
+        && data.playedAt is string && data.playedAt.size() >= 10 && data.playedAt.size() <= 40
+        && (!('mode' in data) || data.mode in ['local', 'ai', 'online']);
+    }
+
+    function validPlayer(player) {
+      return player is map
+        && player.keys().hasAll(['uid', 'name'])
+        && player.keys().hasOnly(['uid', 'name'])
+        && player.uid is string && player.uid.size() >= 1 && player.uid.size() <= 128
+        && validName(player.name);
+    }
+
+    function validBoard(board) {
+      return board is list && board.size() == 9
+        && board[0] in ['', 'X', 'O'] && board[1] in ['', 'X', 'O']
+        && board[2] in ['', 'X', 'O'] && board[3] in ['', 'X', 'O']
+        && board[4] in ['', 'X', 'O'] && board[5] in ['', 'X', 'O']
+        && board[6] in ['', 'X', 'O'] && board[7] in ['', 'X', 'O']
+        && board[8] in ['', 'X', 'O'];
+    }
+
+    function countMarks(board, mark) {
+      return (board[0] == mark ? 1 : 0) + (board[1] == mark ? 1 : 0)
+        + (board[2] == mark ? 1 : 0) + (board[3] == mark ? 1 : 0)
+        + (board[4] == mark ? 1 : 0) + (board[5] == mark ? 1 : 0)
+        + (board[6] == mark ? 1 : 0) + (board[7] == mark ? 1 : 0)
+        + (board[8] == mark ? 1 : 0);
+    }
+
+    function changedCells(before, after) {
+      return (before[0] == after[0] ? 0 : 1) + (before[1] == after[1] ? 0 : 1)
+        + (before[2] == after[2] ? 0 : 1) + (before[3] == after[3] ? 0 : 1)
+        + (before[4] == after[4] ? 0 : 1) + (before[5] == after[5] ? 0 : 1)
+        + (before[6] == after[6] ? 0 : 1) + (before[7] == after[7] ? 0 : 1)
+        + (before[8] == after[8] ? 0 : 1);
+    }
+
+    function hasWon(board, mark) {
+      return (board[0] == mark && board[1] == mark && board[2] == mark)
+        || (board[3] == mark && board[4] == mark && board[5] == mark)
+        || (board[6] == mark && board[7] == mark && board[8] == mark)
+        || (board[0] == mark && board[3] == mark && board[6] == mark)
+        || (board[1] == mark && board[4] == mark && board[7] == mark)
+        || (board[2] == mark && board[5] == mark && board[8] == mark)
+        || (board[0] == mark && board[4] == mark && board[8] == mark)
+        || (board[2] == mark && board[4] == mark && board[6] == mark);
+    }
+
+    function roundResult(board) {
+      return hasWon(board, 'X') ? 'X'
+        : hasWon(board, 'O') ? 'O'
+        : countMarks(board, '') == 0 ? 'D' : 'none';
+    }
+
+    function otherMark(mark) {
+      return mark == 'X' ? 'O' : 'X';
+    }
+
+    function matchWinner(scores) {
+      return scores.X == scores.O ? null : (scores.X > scores.O ? 'X' : 'O');
+    }
+
+    function validRoom(data, roomId) {
+      return data is map
+        && data.keys().hasAll(['code', 'players', 'board', 'turn', 'starter', 'nextStarter', 'scores', 'history', 'total', 'status', 'winner', 'createdAt'])
+        && data.keys().hasOnly(['code', 'players', 'board', 'turn', 'starter', 'nextStarter', 'scores', 'history', 'total', 'status', 'winner', 'createdAt'])
+        && data.code == roomId
+        && roomId.matches('^[A-HJ-NP-Z2-9]{7}$')
+        && data.players is map
+        && data.players.keys().hasAll(['X', 'O']) && data.players.keys().hasOnly(['X', 'O'])
+        && validPlayer(data.players.X)
+        && (data.players.O == null || validPlayer(data.players.O))
+        && validBoard(data.board)
+        && data.turn in ['X', 'O'] && data.starter in ['X', 'O'] && data.nextStarter in ['X', 'O']
+        && data.scores is map
+        && data.scores.keys().hasAll(['X', 'O']) && data.scores.keys().hasOnly(['X', 'O'])
+        && data.scores.X is int && data.scores.X >= 0 && data.scores.X <= 11
+        && data.scores.O is int && data.scores.O >= 0 && data.scores.O <= 11
+        && data.history is list && data.history.size() <= 11 && data.history.hasOnly(['X', 'O', 'D'])
+        && data.total is int && data.total in [5, 11]
+        && data.status in ['waiting', 'playing', 'round-over', 'complete']
+        && (data.winner == null || data.winner in ['X', 'O'])
+        && data.createdAt is string && data.createdAt.size() >= 10 && data.createdAt.size() <= 40;
+    }
+
     function isRoomMember(data) {
       return signedIn() && (
-        data.players.X.uid == request.auth.uid ||
-        (data.players.O != null && data.players.O.uid == request.auth.uid)
+        data.players.X.uid == request.auth.uid
+        || (data.players.O != null && data.players.O.uid == request.auth.uid)
       );
+    }
+
+    function validRoomCreate(roomId) {
+      let data = request.resource.data;
+      return signedIn()
+        && validRoom(data, roomId)
+        && data.players.X.uid == request.auth.uid
+        && data.players.O == null
+        && data.board.hasOnly([''])
+        && data.turn == 'X' && data.starter == 'X' && data.nextStarter == 'O'
+        && data.scores.X == 0 && data.scores.O == 0
+        && data.history.size() == 0
+        && data.status == 'waiting' && data.winner == null;
+    }
+
+    function validRoomJoin(roomId) {
+      let old = resource.data;
+      let next = request.resource.data;
+      return signedIn()
+        && old.status == 'waiting' && old.players.O == null
+        && old.players.X.uid != request.auth.uid
+        && next.diff(old).affectedKeys().hasOnly(['players', 'status'])
+        && next.players.X == old.players.X
+        && validPlayer(next.players.O) && next.players.O.uid == request.auth.uid
+        && next.status == 'playing'
+        && validRoom(next, roomId);
+    }
+
+    function validRoomMove(roomId) {
+      let old = resource.data;
+      let next = request.resource.data;
+      let mark = old.turn;
+      let result = roundResult(next.board);
+      let completesMatch = next.scores.X > old.total / 2
+        || next.scores.O > old.total / 2
+        || next.history.size() >= old.total;
+      return signedIn()
+        && old.status == 'playing'
+        && old.players[mark].uid == request.auth.uid
+        && next.diff(old).affectedKeys().hasOnly(['board', 'turn', 'scores', 'history', 'status', 'nextStarter', 'winner'])
+        && next.code == old.code && next.players == old.players
+        && next.total == old.total && next.starter == old.starter && next.createdAt == old.createdAt
+        && next.turn == otherMark(mark)
+        && changedCells(old.board, next.board) == 1
+        && countMarks(next.board, '') == countMarks(old.board, '') - 1
+        && countMarks(next.board, mark) == countMarks(old.board, mark) + 1
+        && countMarks(next.board, otherMark(mark)) == countMarks(old.board, otherMark(mark))
+        && validRoom(next, roomId)
+        && (
+          (result == 'none'
+            && next.status == 'playing'
+            && next.scores == old.scores
+            && next.history == old.history
+            && next.nextStarter == old.nextStarter
+            && next.winner == null)
+          || (result != 'none'
+            && next.history == old.history.concat([result])
+            && next.scores.X == old.scores.X + (result == 'X' ? 1 : 0)
+            && next.scores.O == old.scores.O + (result == 'O' ? 1 : 0)
+            && next.status == (completesMatch ? 'complete' : 'round-over')
+            && next.nextStarter == (completesMatch ? old.nextStarter : otherMark(old.starter))
+            && next.winner == (completesMatch ? matchWinner(next.scores) : null))
+        );
+    }
+
+    function validRoomAdvance(roomId) {
+      let old = resource.data;
+      let next = request.resource.data;
+      return signedIn()
+        && old.status == 'round-over'
+        && old.players.X.uid == request.auth.uid
+        && next.diff(old).affectedKeys().hasOnly(['board', 'starter', 'turn', 'nextStarter', 'status', 'winner'])
+        && next.code == old.code && next.players == old.players && next.total == old.total
+        && next.scores == old.scores && next.history == old.history && next.createdAt == old.createdAt
+        && next.board.hasOnly([''])
+        && next.starter == old.nextStarter && next.turn == old.nextStarter
+        && next.nextStarter == otherMark(old.nextStarter)
+        && next.status == 'playing' && next.winner == null
+        && validRoom(next, roomId);
     }
 
     match /users/{userId}/matches/{matchId} {
-      allow read, write: if signedIn() && request.auth.uid == userId;
+      allow get, list: if signedIn() && request.auth.uid == userId;
+      allow create, update: if signedIn()
+        && request.auth.uid == userId
+        && validMatch(request.resource.data, matchId);
+      allow delete: if false;
     }
 
     match /rooms/{roomId} {
-      // A room code is required to discover a waiting room. Membership is required after joining.
-      allow get: if signedIn() && (resource == null || resource.data.status == 'waiting' || isRoomMember(resource.data));
+      allow get: if signedIn()
+        && (!exists(/databases/$(database)/documents/rooms/$(roomId))
+          || isRoomMember(resource.data)
+          || resource.data.status == 'waiting');
       allow list: if false;
-      allow create: if signedIn()
-        && request.resource.data.code == roomId
-        && request.resource.data.players.X.uid == request.auth.uid
-        && request.resource.data.players.O == null
-        && request.resource.data.status == 'waiting';
-      allow update: if signedIn() && (
-        // Let one authenticated guest claim the open Player O seat.
-        (resource.data.status == 'waiting'
-          && resource.data.players.O == null
-          && request.resource.data.players.X == resource.data.players.X
-          && request.resource.data.players.O.uid == request.auth.uid
-          && request.resource.data.status == 'playing')
-        // Once joined, only either room member can advance game state.
-        || (isRoomMember(resource.data)
-          && request.resource.data.players == resource.data.players
-          && request.resource.data.code == resource.data.code)
-      );
+      allow create: if validRoomCreate(roomId);
+      allow update: if validRoomJoin(roomId) || validRoomMove(roomId) || validRoomAdvance(roomId);
       allow delete: if false;
     }
   }
